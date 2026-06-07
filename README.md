@@ -2,14 +2,10 @@
 
 An AI-powered expense tracking application that helps users record, organize, and understand their spending through voice input, receipt scanning, and natural language queries.
 
-Built as a hackathon project with a focus on practical automation, reliable extraction pipelines, and a clean user experience.
 
 ---
 
 ## Overview
-
-Managing personal expenses is often tedious. Most people either forget to log purchases or stop tracking altogether after a few days.
-
 dadu-expense reduces that friction by allowing users to:
 
 * Add expenses through voice commands
@@ -80,7 +76,6 @@ Interactive charts provide insights into:
 * FastAPI
 * PostgreSQL
 * SQLAlchemy (Async)
-* Alembic
 * JWT Authentication
 
 ### Frontend
@@ -93,7 +88,6 @@ Interactive charts provide insights into:
 
 ### AI Components
 
-* OpenAI Whisper
 * Google Gemini
 * EasyOCR
 * Custom OCR preprocessing pipeline
@@ -122,7 +116,6 @@ User Query → Intent Classification → Safe Query Layer → Response Generatio
 
 * Python 3.11+
 * Node.js 20+
-* Docker
 * OpenAI API Key
 * Google Gemini API Key
 
