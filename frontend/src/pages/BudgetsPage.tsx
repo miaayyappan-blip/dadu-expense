@@ -188,6 +188,7 @@ function ExportSection() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo]     = useState('')
   const [exportError, setExportError] = useState('')
+  const [exporting, setExporting] = useState<'csv' | 'pdf' | null>(null)
 
   const doExport = async (type: 'csv' | 'pdf') => {
     setExporting(type)

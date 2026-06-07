@@ -157,6 +157,11 @@ function VoiceTab() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
+  const [isRecording, setIsRecording] = useState(false)
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+
+  const chunksRef = useRef<Blob[]>([])
 
   type Stage = 'upload' | 'processing' | 'review' | 'saving'
   const [stage, setStage] = useState<Stage>('upload')
@@ -182,6 +187,55 @@ function VoiceTab() {
       setError(getErrorMessage(err))
       setStage('upload')
     }
+  }
+  const startRecording = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+    })
+
+    const recorder = new MediaRecorder(stream)
+
+    chunksRef.current = []
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunksRef.current.push(event.data)
+      }
+    }
+
+    mediaRecorderRef.current = recorder
+
+    recorder.start()
+
+    setIsRecording(true)
+  } catch (err) {
+    setError('Could not access microphone')
+  }
+}
+  const stopRecording = () => {
+    const recorder = mediaRecorderRef.current
+
+    if (!recorder) return
+
+    recorder.onstop = async () => {
+      const blob = new Blob(
+        chunksRef.current,
+        { type: 'audio/webm' }
+      )
+
+      const file = new File(
+        [blob],
+        'recording.webm',
+        { type: 'audio/webm' }
+      )
+
+      await processAudio(file)
+    }
+
+    recorder.stop()
+
+    setIsRecording(false)
   }
 
   const confirm = async () => {
@@ -214,6 +268,26 @@ function VoiceTab() {
       <h2 className="font-semibold text-slate-800">Voice Expense Entry</h2>
       <p className="text-sm text-slate-500">Record or upload audio describing your expense</p>
 
+    <div className="flex gap-3">
+      {!isRecording ? (
+        <button
+          onClick={startRecording}
+          className="btn-primary flex-1 flex items-center justify-center gap-2"
+        >
+          <Mic className="w-4 h-4" />
+          Start Recording
+        </button>
+      ) : (
+        <button
+          onClick={stopRecording}
+          className="w-full bg-red-600 text-white rounded-lg py-2.5
+                    flex items-center justify-center gap-2"
+        >
+          Stop Recording
+        </button>
+      )}
+    </div>
+
       <button
         onClick={() => fileRef.current?.click()}
         className="w-full border-2 border-dashed border-slate-200 rounded-xl p-10
@@ -221,7 +295,7 @@ function VoiceTab() {
                    transition-colors cursor-pointer"
       >
         <Mic className="w-8 h-8 text-slate-400" />
-        <span className="text-sm font-medium text-slate-600">Upload Audio File</span>
+        <span className="text-sm font-medium text-slate-600">Or Upload Audio File</span>
         <span className="text-xs text-slate-400">mp3, wav, webm, m4a, ogg</span>
       </button>
       <input
