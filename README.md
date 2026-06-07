@@ -1,10 +1,5 @@
 # dadu-expense
 
-An AI-powered expense tracking application that helps users record, organize, and understand their spending through voice input, receipt scanning, and natural language queries.
-
-
----
-
 ## Overview
 dadu-expense reduces that friction by allowing users to:
 
@@ -88,9 +83,11 @@ Interactive charts provide insights into:
 
 ### AI Components
 
-* Google Gemini
-* EasyOCR
-* Custom OCR preprocessing pipeline
+AI & ML:
+*OpenAI Whisper (speech-to-text)
+*Google Gemini 1.5 Flash (information extraction and assistant)
+*EasyOCR (receipt text recognition)
+*Custom OCR preprocessing pipeline
 
 ---
 
@@ -192,17 +189,6 @@ Instead of allowing unrestricted AI-generated database queries, the assistant ma
 * Some receipt formats require manual review.
 * Currency symbols and OCR artifacts may occasionally affect amount extraction.
 * Further OCR model improvements are planned.
-
----
-
-## Future Improvements
-
-* Multi-currency support
-* Shared family budgets
-* Bank statement import
-* Recurring expense detection
-* Mobile application
-* Improved OCR accuracy using dedicated receipt models
 
 ---
 
