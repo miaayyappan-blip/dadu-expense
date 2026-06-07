@@ -47,14 +47,14 @@ CATEGORIES (use exactly these values):
 - Other (anything that doesn't fit above)
 
 OUTPUT SCHEMA:
-{
+{{
   "amount": <number or null>,
   "category": "<Category from list above or null>",
   "description": "<brief description of the expense or null>",
   "merchant": "<merchant/vendor name or null>",
   "date": "<YYYY-MM-DD or null>",
   "extraction_notes": "<brief note about ambiguity or missing info, or null>"
-}"""
+}}"""
 
 
 class GeminiExtractor:
@@ -68,29 +68,29 @@ class GeminiExtractor:
     - Two-shot examples in the prompt improve accuracy on edge cases
     """
 
-    MODEL_NAME = "gemini-1.5-flash"
+    MODEL_NAME = "gemini-2.0-flash"
 
     # Few-shot examples appended to each prompt — significantly improves accuracy
     FEW_SHOT_EXAMPLES = """
 EXAMPLES:
 
 Input: "spent 250 bucks on lunch at canteen today"
-Output: {"amount": 250, "category": "Food", "description": "Lunch at canteen", "merchant": "Canteen", "date": "{today}", "extraction_notes": null}
+Output: {{"amount": 250, "category": "Food", "description": "Lunch at canteen", "merchant": "Canteen", "date": "{today}", "extraction_notes": null}}
 
 Input: "uber to airport yesterday 680"
-Output: {"amount": 680, "category": "Transport", "description": "Uber ride to airport", "merchant": "Uber", "date": "{yesterday}", "extraction_notes": null}
+Output: {{"amount": 680, "category": "Transport", "description": "Uber ride to airport", "merchant": "Uber", "date": "{yesterday}", "extraction_notes": null}}
 
 Input: "bought something expensive"
-Output: {"amount": null, "category": "Shopping", "description": "Purchase", "merchant": null, "date": null, "extraction_notes": "Amount not specified. Category assumed Shopping but may be Other."}
+Output: {{"amount": null, "category": "Shopping", "description": "Purchase", "merchant": null, "date": null, "extraction_notes": "Amount not specified. Category assumed Shopping but may be Other."}}
 
 Input: "Netflix subscription 649"
-Output: {"amount": 649, "category": "Entertainment", "description": "Netflix subscription", "merchant": "Netflix", "date": null, "extraction_notes": "Date not mentioned"}
+Output: {{"amount": 649, "category": "Entertainment", "description": "Netflix subscription", "merchant": "Netflix", "date": null, "extraction_notes": "Date not mentioned"}}
 
 Input: "paid five hundred for medicine at Apollo"
-Output: {"amount": 500, "category": "Health", "description": "Medicine", "merchant": "Apollo Pharmacy", "date": null, "extraction_notes": null}
+Output: {{"amount": 500, "category": "Health", "description": "Medicine", "merchant": "Apollo Pharmacy", "date": null, "extraction_notes": null}}
 
 Input: "groceries 1200 last saturday"
-Output: {"amount": 1200, "category": "Food", "description": "Groceries", "merchant": null, "date": "{last_saturday}", "extraction_notes": null}
+Output: {{"amount": 1200, "category": "Food", "description": "Groceries", "merchant": null, "date": "{last_saturday}", "extraction_notes": null}}
 """
 
     def __init__(self):

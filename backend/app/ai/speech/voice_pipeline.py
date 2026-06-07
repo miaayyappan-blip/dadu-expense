@@ -4,6 +4,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
+from app.ai.extraction.local_extractor import LocalExtractor
 from app.ai.extraction.confidence_scorer import ConfidenceBreakdown, ConfidenceScorer
 from app.ai.extraction.gemini_extractor import GeminiExtractor
 from app.ai.speech.whisper_service import WhisperService, TranscriptionResult
@@ -68,7 +69,11 @@ class VoicePipeline:
 
     def __init__(self):
         self.whisper = WhisperService()
-        self.extractor = GeminiExtractor()
+        try:
+            self.extractor = GeminiExtractor()
+        except Exception:
+            logger.warning("Gemini unavailable, using LocalExtractor")
+            self.extractor = LocalExtractor()
         self.scorer = ConfidenceScorer()
 
     async def process(
@@ -124,9 +129,12 @@ class VoicePipeline:
         try:
             extracted = await self.extractor.extract(transcription.text)
         except Exception as e:
-            logger.error(f"Voice pipeline: Gemini extraction failed: {e}")
-            # Return partial result — user fills in all fields manually
-            return self._build_extraction_failure_result(transcription, str(e))
+            logger.warning(
+                f"Gemini failed, falling back to LocalExtractor: {e}"
+            )
+
+            local = LocalExtractor()
+            extracted = local.extract(transcription.text)
 
         # ── Stage 3: Defaults for missing optional fields ─────────────────────
         # Date defaults to today when not mentioned (logged in confidence scorer)

@@ -35,31 +35,13 @@ class OcrResult:
 
 @lru_cache(maxsize=1)
 def _get_paddle_ocr():
-    """
-    PaddleOCR is expensive to initialize (~2-3 seconds, downloads models).
-    lru_cache(maxsize=1) ensures it's initialized exactly once per process.
-    use_angle_cls=True: auto-corrects rotated text (critical for tilted receipts).
-    use_gpu=False: CPU inference for broad compatibility.
-    """
-    try:
-        from paddleocr import PaddleOCR
-        logger.info("Initializing PaddleOCR (first-time model load)...")
-        ocr = PaddleOCR(
-            use_angle_cls=True,   # Handles upside-down / rotated receipts
-            lang="en",
-            use_gpu=False,
-            show_log=False,       # Suppress PaddleOCR's verbose logging
-            # Precision: use det + rec pipeline (not just det)
-            det=True,
-            rec=True,
-            cls=True,
-        )
-        logger.info("PaddleOCR initialized successfully")
-        return ocr
-    except ImportError:
-        logger.error("PaddleOCR not installed. Run: pip install paddleocr paddlepaddle")
-        raise
+    import easyocr
 
+    logger.info("Initializing EasyOCR...")
+    reader = easyocr.Reader(['en'], gpu=False)
+    logger.info("EasyOCR initialized successfully")
+
+    return reader
 
 class PaddleOcrService:
     """
@@ -104,10 +86,15 @@ class PaddleOcrService:
 
         ocr = _get_paddle_ocr()
 
-        logger.info(f"Running PaddleOCR on {image_array.shape} array")
+        logger.info(f"Running EasyOCR on {image_array.shape} array")
 
         try:
-            raw_result = ocr.ocr(image_array, cls=True)
+            results = ocr.readtext(image_array)
+
+            raw_result = []
+            for result in results:
+                box, text, confidence = result
+                raw_result.append([box, (text, confidence)])
         except Exception as e:
             logger.error(f"PaddleOCR inference failed: {e}")
             raise ValueError(f"OCR processing failed: {e}")
@@ -119,10 +106,8 @@ class PaddleOcrService:
             return self._empty_result()
 
         # Flatten nested result structure
-        detections = []
-        for page_result in raw_result:
-            if page_result:
-                detections.extend(page_result)
+        detections = raw_result
+        
 
         if not detections:
             return self._empty_result()
@@ -139,6 +124,14 @@ class PaddleOcrService:
             try:
                 box, (text, confidence) = detection
                 text = text.strip()
+                import re
+                # Remove currency symbols
+                text = text.replace("₹", "")
+                text = text.replace("Rs.", "")
+                text = text.replace("Rs", "")
+                text = text.replace("INR", "")
+                # Remove stray OCR currency artifacts
+                text = re.sub(r"[₹$€£]", "", text)
                 if not text:
                     continue
 

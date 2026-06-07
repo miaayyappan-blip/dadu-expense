@@ -57,7 +57,7 @@ RECEIPT-SPECIFIC EXTRACTION NOTES:
 - Merchant name is usually the first non-numeric line at the very top
 
 OUTPUT SCHEMA:
-{
+{{
   "amount": <number or null>,
   "category": "<Category or null>",
   "description": "<summary of purchase or null>",
@@ -66,7 +66,7 @@ OUTPUT SCHEMA:
   "items_detected": <number of line items found, or 0>,
   "is_partial_receipt": <true if receipt appears cut off or incomplete>,
   "extraction_notes": "<note about ambiguity, multiple totals, etc. or null>"
-}"""
+}}"""
 
 
 class ReceiptExtractor:
@@ -81,7 +81,7 @@ class ReceiptExtractor:
     - OCR error correction: Gemini handles common OCR mistakes (0 vs O, 1 vs l, etc.)
     """
 
-    MODEL_NAME = "gemini-1.5-flash"
+    MODEL_NAME = "gemini-2.5-flash-lite"
 
     # Few-shot examples for receipt-specific patterns
     FEW_SHOT_EXAMPLES = """
@@ -152,9 +152,8 @@ Output: {"amount": 531.55, "category": "Transport", "description": "Petrol 5L at
         self.model = genai.GenerativeModel(
             model_name=self.MODEL_NAME,
             generation_config=genai.GenerationConfig(
-                response_mime_type="application/json",
                 temperature=0.0,   # Zero temp for receipts — we want exact extraction
-                max_output_tokens=512,
+                max_output_tokens=2048,
             ),
         )
 
@@ -169,6 +168,7 @@ Output: {"amount": 531.55, "category": "Transport", "description": "Petrol 5L at
         self,
         ocr_text: str,
         flagged_hints: Optional[dict] = None,
+        
     ) -> dict:
         """
         Extract structured expense from OCR text.
@@ -188,18 +188,39 @@ Output: {"amount": 531.55, "category": "Transport", "description": "Petrol 5L at
         hint_section = ""
         if flagged_hints:
             hints = []
+
+            if flagged_hints.get("detected_total"):
+                hints.append(
+                    f"Detected total amount from OCR analysis: "
+                    f"{flagged_hints['detected_total']}"
+                )
+
             if flagged_hints.get("likely_total_lines"):
-                hints.append(f"Lines likely containing totals: {flagged_hints['likely_total_lines']}")
+                hints.append(
+                    f"Lines likely containing totals: "
+                    f"{flagged_hints['likely_total_lines']}"
+                )
+
             if flagged_hints.get("likely_merchant"):
-                hints.append(f"Likely merchant (top of receipt): {flagged_hints['likely_merchant']}")
+                hints.append(
+                    f"Likely merchant (top of receipt): "
+                    f"{flagged_hints['likely_merchant']}"
+                )
+
             if flagged_hints.get("likely_date_lines"):
-                hints.append(f"Lines likely containing dates: {flagged_hints['likely_date_lines']}")
+                hints.append(
+                    f"Lines likely containing dates: "
+                    f"{flagged_hints['likely_date_lines']}"
+                )
+
             if hints:
-                hint_section = f"\n\nSTRUCTURAL HINTS from OCR analysis:\n" + "\n".join(hints)
+                hint_section = (
+                    "\n\nSTRUCTURAL HINTS from OCR analysis:\n"
+                    + "\n".join(hints)
+                )
 
         prompt = (
             f"{system}\n\n"
-            f"{self.FEW_SHOT_EXAMPLES}\n\n"
             f"---\n\n"
             f"Now extract from this OCR text:{hint_section}\n\n"
             f"Input OCR text:\n\"{ocr_text}\"\n\n"
@@ -209,9 +230,24 @@ Output: {"amount": 531.55, "category": "Transport", "description": "Petrol 5L at
         logger.info(
             f"Extracting from receipt OCR ({len(ocr_text)} chars)"
         )
-
+        print("\n===== OCR TEXT SENT TO GEMINI =====")
+        print(ocr_text)
+        print("===================================")
         response = await self.model.generate_content_async(prompt)
         raw_json = response.text.strip()
+
+        # Remove Gemini markdown fences
+        if raw_json.startswith("```"):
+            raw_json = raw_json.replace("```json", "")
+            raw_json = raw_json.replace("```", "")
+            raw_json = raw_json.strip()
+
+        print("\n===== GEMINI RESPONSE =====")
+        print(raw_json)
+        print("===========================\n")
+        print("\n===== FINISH REASON =====")
+        print(response.candidates[0].finish_reason)
+        print("=========================\n")
 
         logger.debug(f"Gemini receipt response: {raw_json}")
 
@@ -239,11 +275,16 @@ Output: {"amount": 531.55, "category": "Transport", "description": "Petrol 5L at
     def _parse_amount(self, value) -> Optional[Decimal]:
         if value is None:
             return None
+
         try:
-            # Clean common OCR artifacts in amounts: "1,234.56" → "1234.56"
             cleaned = str(value).replace(",", "").strip()
             amount = Decimal(cleaned)
-            return amount if amount > 0 else None
+
+            if amount <= 0:
+                return None
+
+            return amount
+
         except (InvalidOperation, ValueError):
             logger.warning(f"Cannot parse receipt amount: {value}")
             return None

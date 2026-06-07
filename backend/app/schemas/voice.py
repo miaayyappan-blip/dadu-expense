@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date as DateType
 from decimal import Decimal
 from typing import Optional
 
@@ -24,7 +24,7 @@ class VoiceExtractResponse(BaseModel):
     category: Optional[ExpenseCategory] = None
     description: Optional[str] = None
     merchant: Optional[str] = None
-    date: Optional[date] = None
+    date: Optional[DateType] = None
 
     # Confidence signals
     confidence: float
@@ -50,7 +50,7 @@ class VoiceConfirmRequest(BaseModel):
     category: ExpenseCategory
     description: str
     merchant: Optional[str] = None
-    date: date
+    date: DateType
 
     # Pass back the original AI confidence for storage
     original_confidence: float

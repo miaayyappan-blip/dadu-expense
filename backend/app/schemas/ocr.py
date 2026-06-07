@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date as Date
 from decimal import Decimal
 from typing import Optional
 
@@ -27,7 +27,7 @@ class OcrExtractResponse(BaseModel):
     category: Optional[ExpenseCategory] = None
     description: Optional[str] = None
     merchant: Optional[str] = None
-    date: Optional[date] = None
+    date: Optional[Date] = None
 
     # Confidence signals
     confidence: float
@@ -56,7 +56,7 @@ class OcrConfirmRequest(BaseModel):
     category: ExpenseCategory
     description: str
     merchant: Optional[str] = None
-    date: date
+    date: Date
 
     # Pass back original signals for storage
     original_confidence: float

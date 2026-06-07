@@ -46,8 +46,8 @@ class ImagePreprocessor:
 
     # PaddleOCR performs best when the long edge is in this range
     MIN_LONG_EDGE = 1000
-    MAX_LONG_EDGE = 4000
-    TARGET_LONG_EDGE = 2000
+    MAX_LONG_EDGE = 10000
+    TARGET_LONG_EDGE = 4000
 
     def preprocess(self, image_bytes: bytes) -> PreprocessResult:
         """
@@ -63,6 +63,7 @@ class ImagePreprocessor:
 
         try:
             img = Image.open(io.BytesIO(image_bytes))
+            
         except Exception as e:
             raise ValueError(f"Cannot open image: {e}")
 
@@ -165,7 +166,7 @@ class ImagePreprocessor:
         w, h = img.size
         long_edge = max(w, h)
 
-        if self.MIN_LONG_EDGE <= long_edge <= self.MAX_LONG_EDGE:
+        if long_edge <= self.MAX_LONG_EDGE:
             return img, False
 
         scale = self.TARGET_LONG_EDGE / long_edge

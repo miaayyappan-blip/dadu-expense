@@ -18,6 +18,22 @@ try:
         HRFlowable, PageBreak,
     )
     from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfbase.pdfmetrics import registerFontFamily
+    pdfmetrics.registerFont(
+        TTFont("Arial", r"C:\Windows\Fonts\arial.ttf")
+    )
+
+    pdfmetrics.registerFont(
+        TTFont("Arial-Bold", r"C:\Windows\Fonts\arialbd.ttf")
+    )
+
+    registerFontFamily(
+        "Arial",
+        normal="Arial",
+        bold="Arial-Bold"
+    )
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
@@ -59,6 +75,21 @@ def generate_pdf(summary: ExportSummary) -> bytes:
     """
     if not REPORTLAB_AVAILABLE:
         raise RuntimeError("ReportLab is not installed. Run: pip install reportlab")
+        try:
+            pdfmetrics.registerFont(
+                TTFont(
+                    "Arial",
+                    r"C:\Windows\Fonts\Arial.ttf"
+                )
+            )
+            pdfmetrics.registerFont(
+                TTFont(
+                    "Arial-Bold",
+                    r"C:\Windows\Fonts\Arial-Bold.ttf"
+                )
+            )
+        except:
+            pass
 
     buffer = io.BytesIO()
     PAGE_W, PAGE_H = A4
@@ -121,37 +152,37 @@ def _build_styles() -> dict:
 
     styles["title"] = ParagraphStyle(
         "title",
-        fontSize=22, fontName="Helvetica-Bold",
+        fontSize=22, fontName="Arial-Bold",
         textColor=SLATE_800, spaceAfter=2,
     )
     styles["subtitle"] = ParagraphStyle(
         "subtitle",
-        fontSize=10, fontName="Helvetica",
+        fontSize=10, fontName="Arial",
         textColor=SLATE_500, spaceAfter=4,
     )
     styles["section_title"] = ParagraphStyle(
         "section_title",
-        fontSize=11, fontName="Helvetica-Bold",
+        fontSize=11, fontName="Arial-Bold",
         textColor=SLATE_800, spaceBefore=4, spaceAfter=2,
     )
     styles["body"] = ParagraphStyle(
         "body",
-        fontSize=9, fontName="Helvetica",
+        fontSize=9, fontName="Arial",
         textColor=SLATE_800,
     )
     styles["muted"] = ParagraphStyle(
         "muted",
-        fontSize=8, fontName="Helvetica",
+        fontSize=8, fontName="Arial",
         textColor=SLATE_500,
     )
     styles["metric_value"] = ParagraphStyle(
         "metric_value",
-        fontSize=16, fontName="Helvetica-Bold",
+        fontSize=16, fontName="Arial-Bold",
         textColor=SLATE_800, alignment=TA_CENTER,
     )
     styles["metric_label"] = ParagraphStyle(
         "metric_label",
-        fontSize=8, fontName="Helvetica",
+        fontSize=8, fontName="Arial",
         textColor=SLATE_500, alignment=TA_CENTER,
     )
     return styles
@@ -175,6 +206,7 @@ def _build_header(summary, styles, page_w, margin) -> list:
         bar,
         Spacer(1, 4 * mm),
         Paragraph("Dadu Expense", styles["title"]),
+        Spacer(1, 4 * mm),
         Paragraph("Expense Report", styles["subtitle"]),
         Paragraph(
             f"<b>{summary.user_name}</b> &nbsp;·&nbsp; "
@@ -254,13 +286,13 @@ def _build_category_table(summary, styles, page_w, margin) -> list:
         # Header
         ("BACKGROUND",   (0, 0), (-1, 0),  GREEN),
         ("TEXTCOLOR",    (0, 0), (-1, 0),  WHITE),
-        ("FONTNAME",     (0, 0), (-1, 0),  "Helvetica-Bold"),
+        ("FONTNAME",     (0, 0), (-1, 0),  "Arial-Bold"),
         ("FONTSIZE",     (0, 0), (-1, 0),  9),
         ("BOTTOMPADDING",(0, 0), (-1, 0),  6),
         ("TOPPADDING",   (0, 0), (-1, 0),  6),
         # Data rows
         ("FONTSIZE",     (0, 1), (-1, -1), 8),
-        ("FONTNAME",     (0, 1), (-1, -1), "Helvetica"),
+        ("FONTNAME",     (0, 1), (-1, -1), "Arial"),
         ("ROWBACKGROUNDS",(0, 1), (-1, -1), [WHITE, SLATE_100]),
         ("TOPPADDING",   (0, 1), (-1, -1), 4),
         ("BOTTOMPADDING",(0, 1), (-1, -1), 4),
@@ -278,15 +310,24 @@ def _build_category_table(summary, styles, page_w, margin) -> list:
 def _build_expense_table(summary, styles, page_w, margin) -> list:
     content_w = page_w - 2 * margin
 
-    headers = ["Date", "Description", "Category", "Amount", "Merchant", "Source"]
+    headers = [
+    "Date",
+    "Description",
+    "Category",
+    "Amount",
+    "Merchant",
+    "Source",
+    "Confidence"
+]
     col_widths = [
-        content_w * 0.11,  # date
-        content_w * 0.28,  # description
-        content_w * 0.14,  # category
-        content_w * 0.13,  # amount
-        content_w * 0.20,  # merchant
-        content_w * 0.10,  # source
-    ]
+    content_w * 0.09,
+    content_w * 0.31,
+    content_w * 0.11,
+    content_w * 0.11,
+    content_w * 0.16,
+    content_w * 0.10,
+    content_w * 0.12,
+]
 
     rows = [headers]
     for row in summary.rows:
@@ -297,6 +338,7 @@ def _build_expense_table(summary, styles, page_w, margin) -> list:
             row.amount,
             row.merchant[:25] + "…" if len(row.merchant) > 25 else row.merchant,
             row.source,
+            row.confidence
         ])
 
     t = Table(rows, colWidths=col_widths, repeatRows=1)
@@ -305,13 +347,13 @@ def _build_expense_table(summary, styles, page_w, margin) -> list:
         # Header
         ("BACKGROUND",    (0, 0), (-1, 0),  GREEN),
         ("TEXTCOLOR",     (0, 0), (-1, 0),  WHITE),
-        ("FONTNAME",      (0, 0), (-1, 0),  "Helvetica-Bold"),
+        ("FONTNAME",      (0, 0), (-1, 0),  "Arial-Bold"),
         ("FONTSIZE",      (0, 0), (-1, 0),  9),
         ("TOPPADDING",    (0, 0), (-1, 0),  6),
         ("BOTTOMPADDING", (0, 0), (-1, 0),  6),
         # Data rows
         ("FONTSIZE",      (0, 1), (-1, -1), 7.5),
-        ("FONTNAME",      (0, 1), (-1, -1), "Helvetica"),
+        ("FONTNAME",      (0, 1), (-1, -1), "Arial"),
         ("ROWBACKGROUNDS",(0, 1), (-1, -1), [WHITE, SLATE_100]),
         ("TOPPADDING",    (0, 1), (-1, -1), 3),
         ("BOTTOMPADDING", (0, 1), (-1, -1), 3),
@@ -321,7 +363,7 @@ def _build_expense_table(summary, styles, page_w, margin) -> list:
         ("RIGHTPADDING",  (0, 0), (-1, -1), 5),
         # Amount right-aligned
         ("ALIGN",         (3, 0), (3, -1),  "RIGHT"),
-        ("FONTNAME",      (3, 1), (3, -1),  "Helvetica-Bold"),
+        ("FONTNAME",      (3, 1), (3, -1),  "Arial-Bold"),
     ]
 
     # Color-code source column per row
@@ -332,7 +374,7 @@ def _build_expense_table(summary, styles, page_w, margin) -> list:
         style_cmds += [
             ("BACKGROUND", (5, i), (5, i), bg),
             ("TEXTCOLOR",  (5, i), (5, i), tc),
-            ("FONTNAME",   (5, i), (5, i), "Helvetica-Bold"),
+            ("FONTNAME",   (5, i), (5, i), "Arial-Bold"),
         ]
 
     t.setStyle(TableStyle(style_cmds))
@@ -343,7 +385,7 @@ def _make_footer(summary):
     """Returns a footer function called by ReportLab on every page."""
     def footer(canvas, doc):
         canvas.saveState()
-        canvas.setFont("Helvetica", 7)
+        canvas.setFont("Arial", 7)
         canvas.setFillColor(SLATE_500)
 
         # Left: app name

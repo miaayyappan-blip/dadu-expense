@@ -1,17 +1,17 @@
 import logging
 from dataclasses import dataclass
 from datetime import date
+import re
+
 from decimal import Decimal
 from typing import Optional
-
+from app.ai.extraction.regex_receipt_extractor import extract_receipt_regex
 from app.ai.extraction.receipt_extractor import ReceiptExtractor
 from app.ai.ocr.image_preprocessor import ImagePreprocessor, ImageQuality
 from app.ai.ocr.ocr_confidence_scorer import OcrConfidenceBreakdown, OcrConfidenceScorer
 from app.ai.ocr.paddle_ocr_service import PaddleOcrService
 from app.models.expense import ExpenseCategory
-
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class OcrProcessingResult:
@@ -123,22 +123,121 @@ class OcrPipeline:
 
         # ── Stage 3: Build structural hints for LLM ────────────────────────────
         hints = self._build_extraction_hints(ocr_result)
+        # ── Stage 3: Build structural hints for LLM ────────────────────────────
+
+        # Detect suspicious totals before Gemini sees them
+        detected_total = None
+
+        patterns = [
+            r"TOTAL[:\s]*([\d,]+\.\d{2})",
+            r"GRAND TOTAL[:\s]*([\d,]+\.\d{2})",
+            r"BILL AMOUNT[:\s]*([\d,]+\.\d{2})",
+            r"NET AMOUNT[:\s]*([\d,]+\.\d{2})",
+        ]
+
+        for pattern in patterns:
+            matches = re.findall(
+                pattern,
+                ocr_result.raw_text,
+                re.IGNORECASE
+            )
+
+            if matches:
+                detected_total = matches[-1]
+                break
+
+        print("\n===== DETECTED TOTAL =====")
+        print(detected_total)
+        print("==========================\n")
+
+        # Reject obviously bad OCR values
+        if detected_total:
+            numeric_total = float(
+                detected_total.replace(",", "")
+            )
+
+            if numeric_total > 50000:
+                logger.warning(
+                    f"Suspicious OCR total detected: {numeric_total}"
+                )
+                detected_total = None
+
+        hints["detected_total"] = detected_total
 
         # ── Stage 4: LLM extraction ────────────────────────────────────────────
         logger.info(
             f"OCR pipeline: extracting from {ocr_result.line_count} lines of OCR text"
         )
         try:
-            extracted = await self.extractor.extract(
-                ocr_text=ocr_result.raw_text,
-                flagged_hints=hints,
-            )
+            extracted = extract_receipt_regex(
+            ocr_result.raw_text
+)
+            logger.info(f"Regex extracted: {extracted}")
+            
+
+            needs_gemini = (
+            extracted["amount"] is None
+            or extracted["category"] is None
+            or extracted["merchant"] is None
+        )
+            logger.info(f"Needs Gemini: {needs_gemini}")
+            if needs_gemini:
+                extracted = await self.extractor.extract(
+                    ocr_text=ocr_result.raw_text,
+                    flagged_hints=hints,
+                )
+
+                amount = extracted.get("amount")
+
+                if amount:
+                    # Find all prices on receipt
+                    numbers = re.findall(r"\d+\.\d{2}", ocr_result.raw_text)
+
+                    item_values = []
+
+                    for n in numbers:
+                        try:
+                            value = float(n)
+
+                            # Ignore tax and tiny values
+                            if value > 100:
+                                item_values.append(value)
+
+                        except:
+                            pass
+
+                    item_sum = sum(item_values)
+
+                    # Total shouldn't be wildly larger than all visible items
+                    if float(amount) > item_sum * 1.5:
+                        logger.warning(
+                            f"Suspicious amount {amount}, item_sum={item_sum}"
+                        )
+
+                        extracted["amount"] = None
+                        extracted["extraction_notes"] = (
+                            "Amount rejected as OCR anomaly"
+                        )
+            
+
         except Exception as e:
             logger.error(f"OCR pipeline: Gemini extraction failed: {e}")
-            return self._extraction_failure_result(ocr_result, preprocess_result.quality_score)
+
+            extracted = {
+                "amount": None,
+                "category": ExpenseCategory.OTHER,
+                "description": "Receipt purchase",
+                "merchant": None,
+                "date": None,
+                "items_detected": 0,
+                "is_partial_receipt": False,
+                "extraction_notes": f"Gemini failed: {str(e)}",
+            }
+
+# code continues here...
 
         # ── Stage 5: Date default ─────────────────────────────────────────────
-        expense_date = extracted.get("date") or today
+        expense_date = extracted.get("date") #or today
 
         # ── Stage 6: Confidence scoring ───────────────────────────────────────
         try:

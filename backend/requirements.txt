@@ -11,7 +11,7 @@ pydantic-settings==2.2.1
 openai==1.30.0
 google-generativeai==0.7.0
 paddleocr==2.7.3
-paddlepaddle==2.6.1
+paddlepaddle==2.6.2
 Pillow==10.3.0
 reportlab==4.2.0
 pandas==2.2.2
