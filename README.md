@@ -1,143 +1,215 @@
-# 🤖 dadu-expense
+# dadu-expense
 
-> AI-powered expense tracker — voice entry, receipt scanning, smart assistant
+An AI-powered expense tracking application that helps users record, organize, and understand their spending through voice input, receipt scanning, and natural language queries.
 
-Built for a 72-hour hackathon. Tracks expenses using your voice, receipt photos,
-or manual entry. Includes an AI assistant that answers questions about your spending.
-
----
-
-## ✨ Features
-
-| Feature | How it works |
-|---|---|
-| 🎤 Voice Entry | Speak → OpenAI Whisper transcribes → Gemini extracts fields |
-| 📸 Receipt Scan | Photo → PaddleOCR reads text → Gemini parses receipt structure |
-| 💬 AI Assistant | "How much on food?" → Intent classification → Safe DB query → Natural answer |
-| 📊 Dashboard | Spending trends, category breakdown, budget alerts |
-| 💰 Budget Tracking | Set category limits, 80%/100% warnings, progress bars |
-
-## 🧱 Tech Stack
-
-**Backend:** FastAPI · PostgreSQL · SQLAlchemy (async) · Alembic · JWT Auth
-
-**Frontend:** React · Vite · TypeScript · Tailwind CSS · Recharts
-
-**AI:** OpenAI Whisper · Google Gemini 1.5 Flash · PaddleOCR
+Built as a hackathon project with a focus on practical automation, reliable extraction pipelines, and a clean user experience.
 
 ---
 
-## 🚀 Quick Start
+## Overview
+
+Managing personal expenses is often tedious. Most people either forget to log purchases or stop tracking altogether after a few days.
+
+dadu-expense reduces that friction by allowing users to:
+
+* Add expenses through voice commands
+* Scan receipts and automatically extract purchase details
+* Track budgets across categories
+* View spending trends and analytics
+* Ask questions about their finances using natural language
+
+The goal is to make expense tracking fast enough that users actually continue using it.
+
+---
+
+## Key Features
+
+### Voice-Based Expense Entry
+
+Users can record expenses by speaking naturally.
+
+Example:
+
+> "Spent 450 rupees on lunch today."
+
+The application transcribes the audio and extracts structured expense information automatically.
+
+### Receipt Scanning
+
+Users can upload receipt images and receive extracted information such as:
+
+* Merchant name
+* Amount
+* Date
+* Expense category
+* Purchase description
+
+The system combines OCR, preprocessing, rule-based extraction, and LLM-assisted parsing to improve accuracy.
+
+### AI Financial Assistant
+
+Users can ask questions such as:
+
+* How much did I spend on food this month?
+* What was my largest expense last week?
+* Show spending trends for transportation.
+
+The assistant converts requests into safe application queries and returns natural-language responses.
+
+### Budget Management
+
+Users can create category budgets and monitor progress throughout the month.
+
+The dashboard highlights categories that are approaching or exceeding their limits.
+
+### Analytics Dashboard
+
+Interactive charts provide insights into:
+
+* Spending by category
+* Monthly trends
+* Budget utilization
+* Recent transactions
+
+---
+
+## Technology Stack
+
+### Backend
+
+* FastAPI
+* PostgreSQL
+* SQLAlchemy (Async)
+* Alembic
+* JWT Authentication
+
+### Frontend
+
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
+* Recharts
+
+### AI Components
+
+* OpenAI Whisper
+* Google Gemini
+* EasyOCR
+* Custom OCR preprocessing pipeline
+
+---
+
+## System Architecture
+
+### Expense Entry Flow
+
+Voice Input → Whisper → Gemini Extraction → Validation → Database
+
+### Receipt Processing Flow
+
+Receipt Image → Image Preprocessing → OCR → Structured Extraction → Validation → Database
+
+### AI Assistant Flow
+
+User Query → Intent Classification → Safe Query Layer → Response Generation
+
+---
+
+## Running the Project
 
 ### Prerequisites
-- Python 3.11+
-- Node.js 20+
-- Docker Desktop
-- OpenAI API key
-- Google AI Studio (Gemini) API key
 
-### 1. Clone and configure
-```bash
-git clone https://github.com/YOUR_USERNAME/dadu-expense.git
-cd dadu-expense
+* Python 3.11+
+* Node.js 20+
+* Docker
+* OpenAI API Key
+* Google Gemini API Key
 
-cp backend/.env.example backend/.env
-# Edit backend/.env and fill in your API keys
-```
+### Backend
 
-### 2. Start the database
-```bash
-docker compose up postgres -d
-```
-
-### 3. Start the backend
 ```bash
 cd backend
+
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+venv\Scripts\activate
+
 pip install -r requirements.txt
 
-# Create database tables
-python -c "
-import asyncio
-from app.database.session import engine, Base
-import app.models
-async def create():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print('Done!')
-asyncio.run(create())
-"
-
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload
 ```
 
-### 4. Start the frontend
+### Frontend
+
 ```bash
-# New terminal
 cd frontend
+
 npm install
 npm run dev
 ```
 
-Open **http://localhost:3000** — sign up and start tracking!
+Frontend:
 
-API docs: **http://localhost:8000/docs**
+```text
+http://localhost:3000
+```
 
----
+Backend API:
 
-## 🐳 Docker (run everything at once)
-```bash
-# Fill in backend/.env first
-docker compose up --build
+```text
+http://localhost:8000
+```
+
+API Documentation:
+
+```text
+http://localhost:8000/docs
 ```
 
 ---
 
-## 📁 Project Structure
+## Challenges Addressed
 
-```
-dadu-expense/
-├── backend/
-│   └── app/
-│       ├── ai/              # Whisper, PaddleOCR, Gemini, Assistant
-│       ├── api/v1/          # HTTP endpoints
-│       ├── models/          # Database tables
-│       ├── schemas/         # Request/response shapes
-│       └── services/        # Business logic
-└── frontend/
-    └── src/
-        ├── api/             # Axios + all API calls
-        ├── pages/           # Dashboard, Expenses, Add, Budgets, Login
-        └── components/      # Sidebar, Navbar, UI components
-```
+### Receipt OCR Reliability
 
----
+Receipt images frequently contain:
 
-## 🔐 Environment Variables
+* Poor lighting
+* Skewed angles
+* Blurry text
+* Thermal paper fading
 
-```env
-DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/dadu_expense
-SECRET_KEY=your-32-character-secret-key
-OPENAI_API_KEY=sk-...
-GEMINI_API_KEY=AIza...
-CORS_ORIGINS=http://localhost:3000
-```
+A preprocessing pipeline was implemented to improve OCR performance before extraction.
+
+### Structured Data Extraction
+
+Receipts vary significantly in layout and formatting.
+
+The extraction system combines deterministic parsing with LLM-based reasoning to improve robustness across different receipt styles.
+
+### Safe Financial Queries
+
+Instead of allowing unrestricted AI-generated database queries, the assistant maps user requests to predefined query patterns to maintain security and consistency.
 
 ---
 
-## 🏗️ Architecture Decisions
+## Current Limitations
 
-**Why two AI models for voice?**
-Whisper handles speech-to-text (what it's best at). Gemini handles semantic extraction (what LLMs are best at). Combining them beats using one model for both.
-
-**Why no SQL generation in the assistant?**
-LLMs generating SQL is a security risk — they hallucinate table names and can bypass row-level security. Instead: LLM classifies intent → maps to a pre-written parameterized query template.
-
-**Why deterministic confidence scoring?**
-LLMs invent confidence numbers. Our scorer computes it from verifiable signals: field presence, amount range, date validity. You can audit and trust the number.
+* OCR accuracy can vary for low-quality receipt images.
+* Some receipt formats require manual review.
+* Currency symbols and OCR artifacts may occasionally affect amount extraction.
+* Further OCR model improvements are planned.
 
 ---
 
-## 📄 License
-MIT
+## Future Improvements
+
+* Multi-currency support
+* Shared family budgets
+* Bank statement import
+* Recurring expense detection
+* Mobile application
+* Improved OCR accuracy using dedicated receipt models
+
+---
+
