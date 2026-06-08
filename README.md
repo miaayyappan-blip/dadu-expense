@@ -17,8 +17,6 @@ Demo Credentials
 Email: dadu@dadu.com
 Password: Testing123
 
-Or create a new account via the Sign Up page.
-
 ## Key Features
 
 ### Voice-Based Expense Entry
