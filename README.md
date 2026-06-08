@@ -17,6 +17,16 @@ Demo Credentials
 Email: dadu@dadu.com
 Password: Testing123
 
+SCREENSHOTS:
+<img width="1917" height="847" alt="image" src="https://github.com/user-attachments/assets/24fe6e78-549f-4bfa-87b5-3b5e4310d993" />
+<img width="1528" height="637" alt="image" src="https://github.com/user-attachments/assets/7510c461-6269-48ec-a2b5-a065ccdd90a2" />
+<img width="1886" height="900" alt="image" src="https://github.com/user-attachments/assets/0af923d6-ee99-4d5e-a4f3-f355d86dc93c" />
+<img width="943" height="807" alt="image" src="https://github.com/user-attachments/assets/63c1b311-f9eb-4445-8c09-55ceaa8a65e3" />
+<img width="898" height="567" alt="image" src="https://github.com/user-attachments/assets/8197194f-ab83-4c34-b04c-4888fd9b2076" />
+<img width="1089" height="860" alt="image" src="https://github.com/user-attachments/assets/4a0c10dc-0eea-4349-b9dd-d5fedbc70893" />
+
+
+
 ## Key Features
 
 ### Voice-Based Expense Entry
