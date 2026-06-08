@@ -121,6 +121,10 @@ User Query → Intent Classification → Safe Query Layer → Response Generatio
 * Google Gemini API Key
 * uvicorn
 
+* Important:
+This project was developed and tested on Python 3.11.
+PaddleOCR/PaddlePaddle may not work on Python 3.14.
+
 ### Backend
 
 ```bash
