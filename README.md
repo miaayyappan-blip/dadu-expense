@@ -115,10 +115,11 @@ User Query → Intent Classification → Safe Query Layer → Response Generatio
 
 ### Prerequisites
 
-* Python 3.11+
+* Python 3.11 recommended
 * Node.js 20+
 * OpenAI API Key
 * Google Gemini API Key
+* uvicorn
 
 ### Backend
 
