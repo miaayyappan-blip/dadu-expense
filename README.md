@@ -12,6 +12,12 @@ dadu-expense reduces that friction by allowing users to:
 The goal is to make expense tracking fast enough that users actually continue using it.
 
 ---
+Demo Credentials
+
+Email: dadu@dadu.com
+Password: Testing123
+
+Or create a new account via the Sign Up page.
 
 ## Key Features
 
